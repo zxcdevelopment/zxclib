@@ -84,7 +84,7 @@ module Zxclib
       # Returns:
       # - An instance of the service class with the result of the `call` method, if valid.
       # - Otherwise, an instance of the service class with the validation errors.
-      def call(args_hash = {}, s_pass_exceptions: false)
+      def call(args_hash = {}, s_pass_exceptions = false)
         instance = new
         instance.public_send(:arguments=, args_hash)
         @inputs&.each do |arg|
@@ -108,7 +108,7 @@ module Zxclib
       end
 
       def call!(args_hash = {})
-        call(args_hash, s_pass_exceptions: true).then do |instance|
+        call(args_hash, true).then do |instance|
           raise ServiceCallError.new(instance.errors.join("; ")) if instance.invalid?
           instance.result
         end
