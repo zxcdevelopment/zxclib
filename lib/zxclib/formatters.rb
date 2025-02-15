@@ -29,10 +29,10 @@ module Zxclib
       data_spl = (fio_dob_data || "").split(" ")
       middle_name = data_spl[2]&.capitalize unless /\d/.match?(data_spl[2])
       res = {last_name: data_spl[0]&.capitalize, first_name: data_spl[1]&.capitalize, middle_name: middle_name}
-      begin
-        res[:dob] = Date.parse(data_spl.last) if data_spl.last
-      rescue Date::Error
-      end
+      index_with_numbers = data_spl.find_index { |item| item =~ /\d/ }
+      rest = index_with_numbers ? data_spl[index_with_numbers..-1].join(" ") : ""
+      dob = parse_date_with_pipes(rest)
+      res[:dob] = dob if dob
       res
     end
 
@@ -46,6 +46,16 @@ module Zxclib
 
     def reformat_fio_dob_query(fio_dob_data)
       join_fio_dob_hash(split_fio_dob_query(fio_dob_data))
+    end
+
+    def parse_date_with_pipes(date_with_pipes)
+      dates = (date_with_pipes || "").split("|").map do |date_str|
+        Date.parse(date_str)
+      rescue Date::Error
+        nil
+      end
+
+      dates.compact.first
     end
   end
 end

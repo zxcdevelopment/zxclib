@@ -98,6 +98,7 @@ RSpec.describe Zxclib::Formatters do
         [
           ["Лисин Александр Петрович 1955.03.15", {last_name: "Лисин", first_name: "Александр", middle_name: "Петрович", dob: Date.parse("15.03.1955")}],
           ["Галицын Василий Федорович 1953.01.03 | 03.01.1953", {last_name: "Галицын", first_name: "Василий", middle_name: "Федорович", dob: Date.parse("03.01.1953")}],
+          ["Рептайл Олег Федорович 1953.01.03 | хуй", {last_name: "Рептайл", first_name: "Олег", middle_name: "Федорович", dob: Date.parse("03.01.1953")}],
         ]
       end
 
@@ -162,6 +163,33 @@ RSpec.describe Zxclib::Formatters do
     it "returns an empty string for nil input" do
       fio_dob_data = nil
       expect(reformat_fio_dob_query(fio_dob_data)).to eq("")
+    end
+  end
+
+  describe "#parse_date_with_pipes" do
+    it "parses a valid date with pipes" do
+      date_with_pipes = "01.01.2000 | 02.02.2000"
+      expect(parse_date_with_pipes(date_with_pipes)).to eq(Date.new(2000, 1, 1))
+    end
+
+    it "parses a valid date with pipes and an invalid date" do
+      date_with_pipes = "01.01.2000 | invalid_date"
+      expect(parse_date_with_pipes(date_with_pipes)).to eq(Date.new(2000, 1, 1))
+    end
+
+    it "parses a valid date with pipes and multiple invalid dates" do
+      date_with_pipes = "invalid_date | 01.01.2000 | invalid_date"
+      expect(parse_date_with_pipes(date_with_pipes)).to eq(Date.new(2000, 1, 1))
+    end
+
+    it "returns nil for an empty input" do
+      date_with_pipes = ""
+      expect(parse_date_with_pipes(date_with_pipes)).to be_nil
+    end
+
+    it "returns nil for nil input" do
+      date_with_pipes = nil
+      expect(parse_date_with_pipes(date_with_pipes)).to be_nil
     end
   end
 end
