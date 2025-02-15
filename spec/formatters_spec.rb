@@ -92,6 +92,23 @@ RSpec.describe Zxclib::Formatters do
       result = split_fio_dob_query(nil)
       expect(result).to eq({last_name: nil, first_name: nil, middle_name: nil})
     end
+
+    context "different formats" do
+      let(:formats) do
+        [
+          ["Лисин Александр Петрович 1955.03.15", {last_name: "Лисин", first_name: "Александр", middle_name: "Петрович", dob: Date.parse("15.03.1955")}],
+          ["Галицын Василий Федорович 1953.01.03 | 03.01.1953", {last_name: "Галицын", first_name: "Василий", middle_name: "Федорович", dob: Date.parse("03.01.1953")}],
+        ]
+      end
+
+      it "handles different formats" do
+        formats.each do |example|
+          result = split_fio_dob_query(example[0])
+          expect(result).to eq(example[1])
+        end
+      end
+    end
+
   end
 
   describe "#join_fio_dob_hash" do

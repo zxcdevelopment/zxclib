@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    zxclib (0.1.0)
+    zxclib (0.1.1)
 
 GEM
   remote: https://rubygems.org/
