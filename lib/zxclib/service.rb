@@ -45,6 +45,10 @@ module Zxclib
       errors.empty?
     end
 
+    def success?
+      valid?
+    end
+
     # @return [Boolean] true if there are errors, false otherwise.
     def invalid?
       !valid?
@@ -63,6 +67,24 @@ module Zxclib
         attr_accessor name
       end
 
+      # Gets all inputs from this class and its parent classes
+      #
+      # @return [Array] Array of input definitions from the inheritance chain
+      def all_inputs
+        inputs = []
+        current_class = self
+
+        while current_class != Object && current_class.respond_to?(:instance_variable_get)
+          class_inputs = current_class.instance_variable_get(:@inputs)
+          inputs.concat(class_inputs) if class_inputs
+
+          current_class = current_class.superclass
+          break unless current_class.respond_to?(:input)
+        end
+
+        inputs.reverse
+      end
+
       # Defines multiple input parameters for the service class.
       #
       # @param args [Array<Symbol>] The names of the input parameters.
@@ -76,6 +98,24 @@ module Zxclib
         @warn_empty_inputs = (@warn_empty_inputs || []) + args
       end
 
+      # Gets all warn_empty_inputs from this class and its parent classes
+      #
+      # @return [Array] Array of warn_empty_inputs from the inheritance chain
+      def all_warn_empty_inputs
+        warn_inputs = []
+        current_class = self
+
+        while current_class != Object && current_class.respond_to?(:instance_variable_get)
+          class_warn_inputs = current_class.instance_variable_get(:@warn_empty_inputs)
+          warn_inputs.concat(class_warn_inputs) if class_warn_inputs
+
+          current_class = current_class.superclass
+          break unless current_class.respond_to?(:warn_empty_inputs)
+        end
+
+        warn_inputs.flatten.uniq
+      end
+
       # Invokes the service class with the provided arguments.
       #
       # Parameters:
@@ -87,7 +127,7 @@ module Zxclib
       def call(args_hash = {}, s_pass_exceptions = false)
         instance = new
         instance.public_send(:arguments=, args_hash)
-        @inputs&.each do |arg|
+        all_inputs&.each do |arg|
           value = args_hash[arg[:name]]
 
           next instance.errors.push("#{arg[:name]} is required") if value.nil? && !arg[:options].key?(:default)

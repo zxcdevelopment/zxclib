@@ -30,6 +30,48 @@ class TestExceptionService < Zxclib::Service
   end
 end
 
+class BaseTestService < Zxclib::Service
+  input :base_input
+  input :base_input_with_default, default: "base_default"
+
+  def call
+    "base_success!"
+  end
+end
+
+class InheritedTestService < BaseTestService
+  input :inherited_input
+
+  def call
+    "inherited_success!"
+  end
+end
+
+class GrandParentTestService < Zxclib::Service
+  input :grandparent_input
+  input :grandparent_input_with_default, default: "grandparent_default"
+
+  def call
+    "grandparent_success!"
+  end
+end
+
+class ParentTestService < GrandParentTestService
+  input :parent_input
+
+  def call
+    "parent_success!"
+  end
+end
+
+class ChildTestService < ParentTestService
+  input :child_input
+
+  def call
+    "child_success!"
+  end
+end
+
 RSpec.describe Zxclib::Service, type: :service do
   subject { TestService.call(attributes) }
 
@@ -175,6 +217,100 @@ RSpec.describe Zxclib::Service, type: :service do
       subject { TestExceptionService.call! }
 
       it { expect { subject }.to raise_error(RuntimeError, "An error occurred") }
+    end
+  end
+
+  describe "inheritance" do
+    context "inherited service should have parent inputs" do
+      subject { InheritedTestService.call(attributes) }
+
+      context "when all inputs are present" do
+        let(:attributes) do
+          {
+            base_input: "base_value",
+            base_input_with_default: "custom_base_value",
+            inherited_input: "inherited_value"
+          }
+        end
+
+        it { is_expected.to be_valid }
+        it { expect(subject.result).to eq "inherited_success!" }
+        it { expect(subject.base_input).to eq "base_value" }
+        it { expect(subject.base_input_with_default).to eq "custom_base_value" }
+        it { expect(subject.inherited_input).to eq "inherited_value" }
+      end
+
+      context "when parent input is missing" do
+        let(:attributes) do
+          {
+            inherited_input: "inherited_value"
+          }
+        end
+
+        it { is_expected.not_to be_valid }
+        it { expect(subject.errors).to include "base_input is required" }
+      end
+
+      context "when parent input with default is missing" do
+        let(:attributes) do
+          {
+            base_input: "base_value",
+            inherited_input: "inherited_value"
+          }
+        end
+
+        it { is_expected.to be_valid }
+        it { expect(subject.base_input_with_default).to eq "base_default" }
+      end
+    end
+  end
+
+  describe "deep inheritance" do
+    context "child service should have grandparent and parent inputs" do
+      subject { ChildTestService.call(attributes) }
+
+      context "when all inputs are present" do
+        let(:attributes) do
+          {
+            grandparent_input: "grandparent_value",
+            grandparent_input_with_default: "custom_grandparent_value",
+            parent_input: "parent_value",
+            child_input: "child_value"
+          }
+        end
+
+        it { is_expected.to be_valid }
+        it { expect(subject.result).to eq "child_success!" }
+        it { expect(subject.grandparent_input).to eq "grandparent_value" }
+        it { expect(subject.grandparent_input_with_default).to eq "custom_grandparent_value" }
+        it { expect(subject.parent_input).to eq "parent_value" }
+        it { expect(subject.child_input).to eq "child_value" }
+      end
+
+      context "when grandparent input is missing" do
+        let(:attributes) do
+          {
+            parent_input: "parent_value",
+            child_input: "child_value"
+          }
+        end
+
+        it { is_expected.not_to be_valid }
+        it { expect(subject.errors).to include "grandparent_input is required" }
+      end
+
+      context "when grandparent input with default is missing" do
+        let(:attributes) do
+          {
+            grandparent_input: "grandparent_value",
+            parent_input: "parent_value",
+            child_input: "child_value"
+          }
+        end
+
+        it { is_expected.to be_valid }
+        it { expect(subject.grandparent_input_with_default).to eq "grandparent_default" }
+      end
     end
   end
 end
